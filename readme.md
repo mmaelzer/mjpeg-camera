@@ -70,7 +70,7 @@ setTimeout(function() {
   // Will open a connection long enough to get a single frame and then
   // immediately close the connection
   camera.getScreenshot(function(err, frame) {
-    fs.writeFile(frame, process.exit);
+    fs.writeFile('final.jpeg', frame, process.exit);
   });
 
 }, 60*60*1000);
