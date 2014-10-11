@@ -1,11 +1,13 @@
 mjpeg-camera
 ============
 
+A full-featured mjpeg camera streaming library.
+
 Sometimes you want a slim library that does one thing well, [mjpeg-consumer](https://github.com/mmaelzer/mjpeg-consumer).  
   
 Other times, you want the pieces put together for you so that you can work on more important things.  
   
-**mjpeg-camera** is for those "other" times.
+**mjpeg-camera** is for those __other__ times.
 
 
 Install
@@ -79,13 +81,94 @@ setTimeout(function() {
 Options
 -------
 
-**TODO**
+* **url** `String` - The url of the mjpeg camera.
+* **name** `String` (optional) - The name of the camera. The `name` is used when passing along a frame as frames are objects of the format `{ name: <string>, time: <number>, data: <buffer> }`. Defaults to 'camera' and a random number between 0 and 1000.
+* **motion** `Boolean` (optional) - A flag that tells the camera to only emit frames when motion is detected. mjpeg-camera uses the [motion](https://github.com/mmaelzer/motion) library for motion detection. Defaults to `false`.
+* **password** `String` (optional) - The password required for authenticating with the camera.
+* **user** `String` (optional) - The username required for authenticating with the camera.
 
 
 Methods
 -------
 
-**TODO**
+### camera.start()
+Calling `start` will open the connection to the mjpeg camera and begin streaming jpeg images.
+
+### camera.stop()
+Calling `stop` will close the connection the the mjpeg camera and unhook internal streams.
+
+### camera.getScreenshot(callback)
+If called before `start()` or after `stop()`, `getScreenshot` will open a connection long enough to get a single frame from the camera, then close the connection. If `getScreenshot` is called while there is a connection to the camera, it will pass the latest frame to the callback
+
+#### Example
+```javascript
+var MjpegCamera = require('mjpeg-camera');
+var fs = require('fs');
+
+var camera = new MjpegCamera({ url: 'http://192.168.1.2/feed' });
+
+camera.getScreenshot(function(err, frame) {
+  fs.writeFileSync('camera-screenshot.jpg', frame);  
+});
+```
+
+Streams
+-------
+**mjpeg-camera** is a [node.js Transform stream](http://nodejs.org/api/stream.html#stream_class_stream_transform). You can pipe it to a file writer file [file-on-write](https://github.com/mmaelzer/file-on-write) or addition frame analysis streams. When using the `motion` flag to only stream motion-detected frames, **mjpeg-camera** also provides a `live` stream to pass along to clients or other analysis streams.  
+  
+The data format passed by the base stream looks like this:  
+```javascript
+{
+  name: 'camera-name',
+  time: 1413063729650,
+  data: Buffer < ... >
+}
+```
+
+The data format passed by the `live` stream is a jpeg `Buffer`.
+
+
+#### Example
+```javascript
+var MjpegCamera = require('mjpeg-camera');
+var fs = require('fs');
+var FileOnWrite = require('file-on-write');
+
+var cameraName = 'front-door';
+
+var camera = new MjpegCamera({
+  name: cameraName,
+  url: 'http://192.168.1.2/feed',
+  motion: true
+});
+
+var motionWriter = new FileOnWrite({
+  path: 'motion/',
+  filename: function(frame) {
+    return frame.name + '-' + frame.time;
+  },
+  // We need to pull the jpeg out of the frame object
+  transform: function(frame) {
+    return frame.data;
+  },
+  ext: '.jpg'
+});
+
+var liveWriter = new FileOnWrite({
+  path: 'all/',
+  filename: function() {
+    return camerName + '-' + Date.now();
+  },
+  ext: '.jpg'
+});
+
+// Write frames with motion to the 'motion/'' folder
+camera.pipe(motionWriter);
+
+// Write all frames (including frames with motion) to the 'all/' folder
+camera.live.pipe(liveWriter);
+
+```
 
 
 The MIT License

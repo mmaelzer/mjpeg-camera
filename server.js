@@ -1,6 +1,6 @@
 var config = require('./config.json');
 var http = require('http');
-var MjpegCamera = require('../lib/mjpeg-camera');
+var MjpegCamera = require('./mjpeg-camera');
 var through = require('through2');
 var WriteStream = require('stream').Writable;
 

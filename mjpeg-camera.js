@@ -11,6 +11,7 @@ var util = require('util');
  *    @param {String=} name - camera name
  *    @param {Boolean=} motion - only emit jpegs from motion events
  *    @param {String=} user - the user for auth on the camera
+ *    @param {String} url - the url where the camera is serving an mjpeg stream
  *    @param {String=} password - the password for auth on the camera
  *  @constructor 
  */
