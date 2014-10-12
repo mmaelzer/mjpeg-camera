@@ -1,7 +1,0 @@
-{
-  "name": "camera1",
-  "user": "",
-  "password": "",
-  "url": "http://192.168.7.6/videostream.cgi",
-  "serverport": 8080
-}

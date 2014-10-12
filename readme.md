@@ -3,7 +3,7 @@ mjpeg-camera
 
 A full-featured mjpeg camera streaming library.
 
-Sometimes you want a slim library that does one thing well, [mjpeg-consumer](https://github.com/mmaelzer/mjpeg-consumer).  
+Sometimes you want a slim library that does one thing well, like [mjpeg-consumer](https://github.com/mmaelzer/mjpeg-consumer).  
   
 Other times, you want the pieces put together for you so that you can work on more important things.  
   
@@ -21,9 +21,24 @@ npm install mjpeg-camera
 Stand-alone Server Example
 -------------------------
 ```
-$ echo '{ "name": "backdoor", "user": "admin", "password": "wordup", "url": "http://192.168.7.1/video", "serverport": 12345 }' > server/config.json
-$ npm start
-=== backdoor camera server listening on 12345 ===
+$ npm install mjpeg-camera -g
+$ cs
+
+  Usage: server [options]
+
+  Options:
+
+    -h, --help          output usage information
+    -V, --version       output the version number
+    -u --user []        Set the username for camera authentication
+    -pw --password []   Set the password for camera authentication
+    -l --url []         Set the url for the camera
+    -p --port [8080]    Set the port for the http server to listen on
+    -n --name [camera]  Set the name of the camera
+
+
+$ cs http://204.248.124.202/mjpg/video.mjpg?camera=1 -n "Spring Grove" -p 12345
+=== Spring Grove camera server listening on 12345 ===
 
 // open up http://localhost:12345 in your browser to view the live video stream
 ```

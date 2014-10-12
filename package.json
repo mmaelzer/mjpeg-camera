@@ -1,15 +1,15 @@
 {
   "name": "mjpeg-camera",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A full-featured mjpeg camera streaming library",
   "main": "mjpeg-camera.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "bin": {
+    "cs": "cs"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/mmaelzer/mjpeg-camera"
-  },  
+  },
   "engines": {
     "node": ">=0.10.0"
   },
@@ -26,11 +26,9 @@
   "bugs": {
     "url": "https://github.com/mmaelzer/mjpeg-camera/issues"
   },
-  "scripts": {
-    "start": "node server.js"
-  },
   "homepage": "https://github.com/mmaelzer/mjpeg-camera",
   "dependencies": {
+    "commander": "^2.3.0",
     "lodash": "^2.4.1",
     "mjpeg-consumer": "^0.4.0",
     "motion": "^0.2.2",

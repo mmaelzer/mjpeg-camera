@@ -1,19 +1,40 @@
-var config = require('./config.json');
+#!/usr/bin/env node
+
 var http = require('http');
 var MjpegCamera = require('./mjpeg-camera');
 var through = require('through2');
 var WriteStream = require('stream').Writable;
+var program = require('commander');
+var pack = require('./package.json');
+
+program
+  .version(pack.version)
+  .option('-u --user []', 'Set the username for camera authentication')
+  .option('-pw --password []', 'Set the password for camera authentication')
+  .option('-l --url []', 'Set the url for the camera')
+  .option('-p --port [8080]', 'Set the port for the http server to listen on', parseInt)
+  .option('-n --name [camera]', 'Set the name of the camera')
+  .parse(process.argv)
+
+if (!program.url) {
+  program.help();
+}
 
 // Create a new MjpegCamera object
-var camera = new MjpegCamera(config);
+var camera = new MjpegCamera({
+  user: program.user || '',
+  password: program.password || '',
+  url: program.url,
+  name: program.name || 'camera'
+});
 camera.start();
 
 var boundary = '--boundandrebound';
-var port = config.serverport || 8080;
+var port = program.port || 8080;
 
 console.log('===', camera.name, 'camera server listening on', port, '===');
 
-var server = http.createServer(function(req, res) {
+http.createServer(function(req, res) {
   // A request to http://localhost/stream returns an unending sequence of jpegs
   // Listen for a disconnect from the client to properly unpipe the jpeg stream
   if (/stream/.test(req.url)) {
@@ -43,11 +64,9 @@ var server = http.createServer(function(req, res) {
                 <head>\
                   <title>'+camera.name+'</title>\
                 </head>\
-                <body>\
+                <body style="background:#000;">\
                   <img src="/stream" style="width:100%;height:auto;">\
                 </body>\
               </html>');
   }
-});
-
-server.listen(port);
+}).listen(port);
