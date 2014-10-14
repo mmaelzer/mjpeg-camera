@@ -129,9 +129,9 @@ camera.getScreenshot(function(err, frame) {
 
 Streams
 -------
-**mjpeg-camera** is a [node.js Transform stream](http://nodejs.org/api/stream.html#stream_class_stream_transform). You can pipe it to a file writer file [file-on-write](https://github.com/mmaelzer/file-on-write) or addition frame analysis streams. When using the `motion` flag to only stream motion-detected frames, **mjpeg-camera** also provides a `live` stream to pass along to clients or other analysis streams.  
+**mjpeg-camera** is a [node.js Transform stream](http://nodejs.org/api/stream.html#stream_class_stream_transform). You can pipe it to a file writer file [file-on-write](https://github.com/mmaelzer/file-on-write) or addition frame analysis streams. When using the `motion` flag to only stream motion-detected frames.
   
-The data format passed by the base stream looks like this:  
+The data format passed by the stream looks like this:  
 ```javascript
 {
   name: 'camera-name',
@@ -139,8 +139,6 @@ The data format passed by the base stream looks like this:
   data: Buffer < ... >
 }
 ```
-
-The data format passed by the `live` stream is a jpeg `Buffer`.
 
 
 #### Example

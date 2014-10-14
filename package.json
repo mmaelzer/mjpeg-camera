@@ -1,6 +1,6 @@
 {
   "name": "mjpeg-camera",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "A full-featured mjpeg camera streaming library",
   "main": "mjpeg-camera.js",
   "bin": {
@@ -29,10 +29,10 @@
   "homepage": "https://github.com/mmaelzer/mjpeg-camera",
   "dependencies": {
     "commander": "^2.3.0",
+    "dev-null": "^0.1.1",
     "lodash": "^2.4.1",
     "mjpeg-consumer": "^0.4.0",
     "motion": "^0.2.2",
-    "request": "^2.37.0",
-    "through2": "^0.6.1"
+    "request": "^2.37.0"
   }
 }

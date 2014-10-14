@@ -2,7 +2,6 @@
 
 var http = require('http');
 var MjpegCamera = require('./mjpeg-camera');
-var through = require('through2');
 var WriteStream = require('stream').Writable;
 var program = require('commander');
 var pack = require('./package.json');
@@ -39,15 +38,16 @@ http.createServer(function(req, res) {
   // Listen for a disconnect from the client to properly unpipe the jpeg stream
   if (/stream/.test(req.url)) {
     res.writeHead(200, {'Content-Type': 'multipart/x-mixed-replace; boundary=' + boundary});
-    var ws = new WriteStream();
-    ws._write = function(jpeg, enc, next) {
+    var ws = new WriteStream({objectMode: true});
+    ws._write = function(chunk, enc, next) {
+      var jpeg = chunk.data;
       res.write(boundary + '\nContent-Type: image/jpeg\nContent-Length: '+ jpeg.length + '\n\n');
       res.write(jpeg);
       next();
     };
-    camera.live.pipe(ws);
+    camera.pipe(ws);
     res.on('close', function() {
-      camera.live.unpipe(ws);
+      camera.unpipe(ws);
     });
   } 
   // A request to http://localhost/frame returns a single frame as a jpeg

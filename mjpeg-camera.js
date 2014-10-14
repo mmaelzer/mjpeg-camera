@@ -1,8 +1,8 @@
 var _ = require('lodash');
-var request = require('request');
+var devnull = require('dev-null');
 var MjpegConsumer = require('mjpeg-consumer');
 var MotionStream = require('motion').Stream;
-var through = require('through2');
+var request = require('request');
 var Transform = require('stream').Transform;
 var util = require('util');
 
@@ -19,6 +19,7 @@ function Camera(options) {
   options = options || {};
   // Streams need this flag to handle object data
   options.objectMode = true;
+  options.highWaterMark = 0;
   Transform.call(this, options);
   this.name = options.name || ('camera' + _.random(1000));
   this.motion = options.motion || false;
@@ -28,9 +29,40 @@ function Camera(options) {
   // this.frame will hold onto the last frame
   this.frame = null;
 
-  this.live = through();
+  var abyss = devnull(options);
+  // Force the live stream to flow by piping to nowhere by default
+  this.pipe(abyss);
+  this.on('piped', function(dest) {
+    if (dest !== abyss) {
+      this.unpipe(abyss);
+    }
+  }.bind(this));
+  this.on('unpiped', function(dest) {
+    if (dest !== abyss) {
+      this.pipe(abyss);
+    }
+  }.bind(this));
 }
 util.inherits(Camera, Transform);
+
+/**
+ *  Emits a 'piped' event when a writable streams receives a pipe
+ *  @param {Stream} dest
+ *  @param {Object=} pipeOpts
+ */
+Camera.prototype.pipe = function(dest, pipeOpts) {
+  Transform.prototype.pipe.call(this, dest, pipeOpts);
+  this.emit('piped', dest);
+};
+
+/**
+ *  Emits a 'unpiped' event when a writable streams unpipes
+ *  @param {Stream} dest
+ */
+Camera.prototype.unpipe = function(dest) {
+  Transform.prototype.unpipe.call(this, dest);
+  this.emit('unpiped', dest);
+};
 
 /**
  *  Open the connection to the camera and begin streaming
@@ -38,7 +70,6 @@ util.inherits(Camera, Transform);
  */
 Camera.prototype.start = function() {
   var videostream = this._getVideoStream();
-
   videostream.on('data', this.onFrame.bind(this));
   if (this.motion) {
     this.motionStream = new MotionStream();
@@ -95,7 +126,6 @@ Camera.prototype.stop = function() {
  */
 Camera.prototype.onFrame = function(frame) {
   this.frame = frame;
-  this.live.write(frame);
 };
 
 /**
