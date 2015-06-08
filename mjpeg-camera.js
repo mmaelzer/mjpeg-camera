@@ -2,7 +2,7 @@ var _ = require('lodash');
 var devnull = require('dev-null');
 var MjpegConsumer = require('mjpeg-consumer');
 var MotionStream = require('motion').Stream;
-var request = require('request');
+var Request = require('request');
 var Transform = require('stream').Transform;
 var util = require('util');
 
@@ -13,6 +13,7 @@ var util = require('util');
  *    @param {String=} user - the user for auth on the camera
  *    @param {String} url - the url where the camera is serving an mjpeg stream
  *    @param {String=} password - the password for auth on the camera
+ *    @param {Number=} timeout - reconnect if no frames after timeout millseconds
  *  @constructor 
  */
 function Camera(options) {
@@ -20,49 +21,21 @@ function Camera(options) {
   // Streams need this flag to handle object data
   options.objectMode = true;
   options.highWaterMark = 0;
+  this.options = options;
+
   Transform.call(this, options);
+
   this.name = options.name || ('camera' + _.random(1000));
   this.motion = options.motion || false;
   this.url = options.url;
   this.user = options.user;
   this.password = options.password;
+  this.timeout = options.timeout || 10000;
   // this.frame will hold onto the last frame
   this.frame = null;
-
-  var abyss = devnull(options);
-  // Force the live stream to flow by piping to nowhere by default
-  this.pipe(abyss);
-  this.on('piped', function(dest) {
-    if (dest !== abyss) {
-      this.unpipe(abyss);
-    }
-  }.bind(this));
-  this.on('unpiped', function(dest) {
-    if (dest !== abyss) {
-      this.pipe(abyss);
-    }
-  }.bind(this));
+  this.pipe(devnull(options));
 }
 util.inherits(Camera, Transform);
-
-/**
- *  Emits a 'piped' event when a writable streams receives a pipe
- *  @param {Stream} dest
- *  @param {Object=} pipeOpts
- */
-Camera.prototype.pipe = function(dest, pipeOpts) {
-  Transform.prototype.pipe.call(this, dest, pipeOpts);
-  this.emit('piped', dest);
-};
-
-/**
- *  Emits a 'unpiped' event when a writable streams unpipes
- *  @param {Stream} dest
- */
-Camera.prototype.unpipe = function(dest) {
-  Transform.prototype.unpipe.call(this, dest);
-  this.emit('unpiped', dest);
-};
 
 /**
  *  Open the connection to the camera and begin streaming
@@ -72,8 +45,7 @@ Camera.prototype.start = function() {
   var videostream = this._getVideoStream();
   videostream.on('data', this.onFrame.bind(this));
   if (this.motion) {
-    this.motionStream = new MotionStream();
-    videostream.pipe(this.motionStream).pipe(this);
+    videostream.pipe(new MotionStream()).pipe(this);
   } else {
     videostream.pipe(this);
   }
@@ -84,17 +56,21 @@ Camera.prototype.start = function() {
  *  @private
  */
 Camera.prototype._connect = function() {
-  this.connection = request({
-    url: this.url,
-    auth: {
-      user: this.user,
-      pass: this.password,
-      // this is for digest authentication, also works for basic auth
-      sendImmediately: false
-    }
-  });
+  if (this.connection) {
+    this.stop();
+  }
 
-  this.connection.on('error', this._connect.bind(this));
+  var options = { url: this.url };
+  var sendImmediately = { sendImmediately: true };
+  if (this.user) {
+    options.auth = _.extend(sendImmediately, options.auth, { user: this.user });
+  }
+  if (this.pass) {
+    options.auth = _.extend(sendImmediately, options.auth, { pass: this.password });
+  }
+  this.connection = new Request(options);
+  this.connection.on('error', this.keepalive.bind(this));
+  this.keepalive();
 };
 
 /**
@@ -105,8 +81,7 @@ Camera.prototype._getVideoStream = function() {
   if (!this.connection) {
     this._connect(); 
   }
-  this.consumer = new MjpegConsumer();
-  return this.connection.pipe(this.consumer);
+  return this.connection.pipe(new MjpegConsumer());
 };
 
 /**
@@ -114,7 +89,8 @@ Camera.prototype._getVideoStream = function() {
  */
 Camera.prototype.stop = function() {
   this.connection.abort();
-  this.consumer.unpipe();
+  this.unpipe();
+  Transform.call(this, this.options);
   this.connection = null;
 };
 
@@ -125,7 +101,20 @@ Camera.prototype.stop = function() {
  *  @param {Buffer} frame
  */
 Camera.prototype.onFrame = function(frame) {
+  this.keepalive();
   this.frame = frame;
+};
+
+/**
+ *  Attempt to refresh the connection to the camera if we don't receive
+ *  a frame after `timeout` ms.
+ */
+Camera.prototype.keepalive = function() {
+  clearTimeout(this._timeout);
+  this._timeout = setTimeout(function() {
+    this.stop();
+    this.start();
+  }.bind(this), this.timeout);
 };
 
 /**

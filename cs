@@ -13,7 +13,7 @@ program
   .option('-l --url []', 'Set the url for the camera')
   .option('-p --port [8080]', 'Set the port for the http server to listen on', parseInt)
   .option('-n --name [camera]', 'Set the name of the camera')
-  .parse(process.argv)
+  .parse(process.argv);
 
 if (!program.url) {
   program.help();
@@ -24,7 +24,7 @@ var camera = new MjpegCamera({
   user: program.user || '',
   password: program.password || '',
   url: program.url,
-  name: program.name || 'camera'
+  name: typeof program.name === 'function' ? '' : program.name
 });
 camera.start();
 
