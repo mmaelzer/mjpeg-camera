@@ -128,7 +128,9 @@ Camera.prototype.keepalive = function() {
  */
 Camera.prototype.getScreenshot = function(callback) {
   if (this.connection) {
-    process.nextTick(function() { return this.frame; });
+    process.nextTick(function() {
+      callback(null, this.frame);
+    });
   } else {
     var videostream = this._getVideoStream();
     
