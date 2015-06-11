@@ -42,6 +42,7 @@ util.inherits(Camera, Transform);
  *  and optionally performing motion analysis
  */
 Camera.prototype.start = function() {
+  this._resetState();
   var videostream = this._getVideoStream();
   videostream.on('data', this.onFrame.bind(this));
   if (this.motion) {
@@ -49,6 +50,14 @@ Camera.prototype.start = function() {
   } else {
     videostream.pipe(this);
   }
+};
+
+/** Clear Stream state */
+Camera.prototype._resetState = function() {
+  var events = this._events;
+  delete this._events;
+  Transform.call(this, this.options);
+  this._events = events;
 };
 
 /**
@@ -90,7 +99,6 @@ Camera.prototype._getVideoStream = function() {
 Camera.prototype.stop = function() {
   this.connection.abort();
   this.unpipe();
-  Transform.call(this, this.options);
   this.connection = null;
 };
 
