@@ -71,10 +71,10 @@ Camera.prototype._connect = function() {
 
   var options = { url: this.url };
 
-  if (this.user || this.pass) {
+  if (this.user || this.password) {
     options.auth = {
       user: this.user,
-      pass: this.pass,
+      pass: this.password,
       sendImmediately: true
     };
   }
