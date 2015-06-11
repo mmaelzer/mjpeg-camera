@@ -70,13 +70,15 @@ Camera.prototype._connect = function() {
   }
 
   var options = { url: this.url };
-  var sendImmediately = { sendImmediately: true };
-  if (this.user) {
-    options.auth = _.extend(sendImmediately, options.auth, { user: this.user });
+
+  if (this.user || this.pass) {
+    options.auth = {
+      user: this.user,
+      pass: this.pass,
+      sendImmediately: true
+    };
   }
-  if (this.pass) {
-    options.auth = _.extend(sendImmediately, options.auth, { pass: this.password });
-  }
+
   this.connection = new Request(options);
   this.connection.on('error', this.keepalive.bind(this));
   this.keepalive();
