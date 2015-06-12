@@ -30,9 +30,14 @@ function Camera(options) {
   this.url = options.url;
   this.user = options.user;
   this.password = options.password;
+
+  this.sendImmediately = options.sendImmediately || true;
+
   this.timeout = options.timeout || 10000;
   // this.frame will hold onto the last frame
   this.frame = null;
+  // hold onto state of pipes
+  this._pipes = [];
   this.pipe(devnull(options));
 }
 util.inherits(Camera, Transform);
@@ -41,8 +46,10 @@ util.inherits(Camera, Transform);
  *  Open the connection to the camera and begin streaming
  *  and optionally performing motion analysis
  */
-Camera.prototype.start = function() {
-  this._resetState();
+Camera.prototype.start = function(restarting) {
+  if (restarting) {
+    this._resetState();
+  }
   var videostream = this._getVideoStream();
   videostream.on('data', this.onFrame.bind(this));
   if (this.motion) {
@@ -52,12 +59,34 @@ Camera.prototype.start = function() {
   }
 };
 
+/**
+ *  Overwrite pipe so we can keep track of piped destinations
+ */
+Camera.prototype.pipe = function(dest, options) {
+  Transform.prototype.pipe.call(this, dest, options);
+  if (!_.contains(this._pipes, dest)) {
+    this._pipes.push(dest);
+  }
+};
+
+/**
+ *  Overwrite unpipe so we can keep track of piped destinations
+ */
+Camera.prototype.unpipe = function(dest) {
+  Transform.prototype.unpipe.call(this, dest);
+  this._pipes = dest ? _.without(this._pipes, dest) : [];
+};
+
 /** Clear Stream state */
 Camera.prototype._resetState = function() {
   var events = this._events;
   delete this._events;
   Transform.call(this, this.options);
   this._events = events;
+  // Reset pipes
+  this._pipes.forEach(function(dest) {
+    Transform.prototype.pipe.call(this, dest);
+  }, this);
 };
 
 /**
@@ -75,7 +104,7 @@ Camera.prototype._connect = function() {
     options.auth = {
       user: this.user,
       pass: this.password,
-      sendImmediately: true
+      sendImmediately: this.sendImmediately 
     };
   }
 
@@ -100,7 +129,6 @@ Camera.prototype._getVideoStream = function() {
  */
 Camera.prototype.stop = function() {
   this.connection.abort();
-  this.unpipe();
   this.connection = null;
 };
 
@@ -123,7 +151,7 @@ Camera.prototype.keepalive = function() {
   clearTimeout(this._timeout);
   this._timeout = setTimeout(function() {
     this.stop();
-    this.start();
+    this.start(true);
   }.bind(this), this.timeout);
 };
 
