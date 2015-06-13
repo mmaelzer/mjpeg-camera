@@ -3,7 +3,7 @@ var devnull = require('dev-null');
 var MjpegConsumer = require('mjpeg-consumer');
 var MotionStream = require('motion').Stream;
 var Request = require('request');
-var Transform = require('stream').Transform;
+var Stream = require('stream');
 var util = require('util');
 
 /**
@@ -13,6 +13,7 @@ var util = require('util');
  *    @param {String=} user - the user for auth on the camera
  *    @param {String} url - the url where the camera is serving an mjpeg stream
  *    @param {String=} password - the password for auth on the camera
+ *    @param {Boolean=} sendImmediately - when true, causes a basic or bearer authentication header to be sent
  *    @param {Number=} timeout - reconnect if no frames after timeout millseconds
  *  @constructor 
  */
@@ -23,7 +24,8 @@ function Camera(options) {
   options.highWaterMark = 0;
   this.options = options;
 
-  Transform.call(this, options);
+  this.readable = true;
+  this.writable = true;
 
   this.name = options.name || ('camera' + _.random(1000));
   this.motion = options.motion || false;
@@ -40,16 +42,13 @@ function Camera(options) {
   this._pipes = [];
   this.pipe(devnull(options));
 }
-util.inherits(Camera, Transform);
+util.inherits(Camera, Stream);
 
 /**
  *  Open the connection to the camera and begin streaming
  *  and optionally performing motion analysis
  */
-Camera.prototype.start = function(restarting) {
-  if (restarting) {
-    this._resetState();
-  }
+Camera.prototype.start = function() {
   var videostream = this._getVideoStream();
   videostream.on('data', this.onFrame.bind(this));
   if (this.motion) {
@@ -57,36 +56,6 @@ Camera.prototype.start = function(restarting) {
   } else {
     videostream.pipe(this);
   }
-};
-
-/**
- *  Overwrite pipe so we can keep track of piped destinations
- */
-Camera.prototype.pipe = function(dest, options) {
-  Transform.prototype.pipe.call(this, dest, options);
-  if (!_.contains(this._pipes, dest)) {
-    this._pipes.push(dest);
-  }
-};
-
-/**
- *  Overwrite unpipe so we can keep track of piped destinations
- */
-Camera.prototype.unpipe = function(dest) {
-  Transform.prototype.unpipe.call(this, dest);
-  this._pipes = dest ? _.without(this._pipes, dest) : [];
-};
-
-/** Clear Stream state */
-Camera.prototype._resetState = function() {
-  var events = this._events;
-  delete this._events;
-  Transform.call(this, this.options);
-  this._events = events;
-  // Reset pipes
-  this._pipes.forEach(function(dest) {
-    Transform.prototype.pipe.call(this, dest);
-  }, this);
 };
 
 /**
@@ -151,7 +120,7 @@ Camera.prototype.keepalive = function() {
   clearTimeout(this._timeout);
   this._timeout = setTimeout(function() {
     this.stop();
-    this.start(true);
+    this.start();
   }.bind(this), this.timeout);
 };
 
@@ -168,7 +137,7 @@ Camera.prototype.getScreenshot = function(callback) {
   if (this.connection) {
     process.nextTick(function() {
       callback(null, this.frame);
-    });
+    }.bind(this));
   } else {
     var videostream = this._getVideoStream();
     
@@ -185,12 +154,12 @@ Camera.prototype.getScreenshot = function(callback) {
 };
 
 /**
- *  Implementation of the private `_transform` method of Transform streams.
  *  @param {Buffer|Object} chunk
- *  @param {String} encoding
- *  @param {Function} done
  */
-Camera.prototype._transform = function(chunk, encoding, done) {
+Camera.prototype.write= function(chunk) {
+  // If we get empty data, ignore
+  if (!chunk) return;
+
   // If chunk is a buffer, it's coming from mjpeg-consumer. Convert
   // to an object of the structure provided by the motion stream
   if (Buffer.isBuffer(chunk)) {
@@ -201,10 +170,15 @@ Camera.prototype._transform = function(chunk, encoding, done) {
   if (this.name) {
     chunk.name = this.name;
   }
+  this.emit('data', chunk);
+};
 
-  this.push(chunk);
+Camera.prototype.end = function(chunk) {
+  this.write(chunk);
+};
 
-  done();
+Camera.prototype.destroy = function() {
+  this.writable = false;
 };
 
 module.exports = Camera;
