@@ -37,7 +37,7 @@ $ cs
     -n --name [camera]  Set the name of the camera
 
 
-$ cs http://204.248.124.202/mjpg/video.mjpg?camera=1 -n "Spring Grove" -p 12345
+$ cs -l http://204.248.124.202/mjpg/video.mjpg?camera=1 -n "Spring Grove" -p 12345
 === Spring Grove camera server listening on 12345 ===
 
 // open up http://localhost:12345 in your browser to view the live video stream
