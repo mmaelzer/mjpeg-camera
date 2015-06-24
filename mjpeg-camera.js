@@ -22,7 +22,6 @@ function Camera(options) {
   // Streams need this flag to handle object data
   options.objectMode = true;
   options.highWaterMark = 0;
-  this.options = options;
 
   this.readable = true;
   this.writable = true;
@@ -33,13 +32,11 @@ function Camera(options) {
   this.user = options.user;
   this.password = options.password;
 
-  this.sendImmediately = options.sendImmediately || true;
+  this.sendImmediately = _.has(options, 'sendImmediately') ? options.sendImmediately : true;
 
   this.timeout = options.timeout || 10000;
   // this.frame will hold onto the last frame
   this.frame = null;
-  // hold onto state of pipes
-  this._pipes = [];
   this.pipe(devnull(options));
 }
 util.inherits(Camera, Stream);
@@ -156,7 +153,7 @@ Camera.prototype.getScreenshot = function(callback) {
 /**
  *  @param {Buffer|Object} chunk
  */
-Camera.prototype.write= function(chunk) {
+Camera.prototype.write = function(chunk) {
   // If we get empty data, ignore
   if (!chunk) return;
 
@@ -173,8 +170,11 @@ Camera.prototype.write= function(chunk) {
   this.emit('data', chunk);
 };
 
+/**
+ *  @param {Buffer|Object} chunk
+ */
 Camera.prototype.end = function(chunk) {
-  this.write(chunk);
+  if (chunk) this.write(chunk);
 };
 
 Camera.prototype.destroy = function() {
