@@ -94,6 +94,7 @@ Camera.prototype._getVideoStream = function() {
  *  Closes the connection to the camera and unhooks the streams
  */
 Camera.prototype.stop = function() {
+  clearTimeout(this._timeout);
   this.connection.abort();
   this.connection = null;
 };
