@@ -168,19 +168,8 @@ var motionWriter = new FileOnWrite({
   ext: '.jpg'
 });
 
-var liveWriter = new FileOnWrite({
-  path: 'all/',
-  filename: function() {
-    return camerName + '-' + Date.now();
-  },
-  ext: '.jpg'
-});
-
 // Write frames with motion to the 'motion/'' folder
 camera.pipe(motionWriter);
-
-// Write all frames (including frames with motion) to the 'all/' folder
-camera.live.pipe(liveWriter);
 
 ```
 
