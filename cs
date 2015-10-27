@@ -5,6 +5,7 @@ var MjpegCamera = require('./mjpeg-camera');
 var WriteStream = require('stream').Writable;
 var program = require('commander');
 var pack = require('./package.json');
+var unpipe = require('unpipe');
 
 program
   .version(pack.version)
@@ -47,7 +48,7 @@ http.createServer(function(req, res) {
     };
     camera.pipe(ws);
     res.on('close', function() {
-      camera.unpipe(ws);
+      unpipe(camera);
     });
   } 
   // A request to http://localhost/frame returns a single frame as a jpeg
