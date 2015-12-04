@@ -59,7 +59,7 @@ Camera.prototype.start = function() {
  *  Creates an http stream to the camera via request
  *  @private
  */
-Camera.prototype._connect = function() {
+Camera.prototype._connect = function(errorCallback) {
   if (this.connection) {
     this.stop();
   }
@@ -75,7 +75,11 @@ Camera.prototype._connect = function() {
   }
 
   this.connection = new Request(options);
-  this.connection.on('error', this.keepalive.bind(this));
+  if (errorCallback) {
+    this.connection.on('error', errorCallback);
+  } else {
+    this.connection.on('error', this.keepalive.bind(this));
+  }
   this.keepalive();
 };
 
@@ -83,9 +87,9 @@ Camera.prototype._connect = function() {
  *  Calls 'connect' if not yet connected and hooks up the MjpegConsumer
  *  @private
  */
-Camera.prototype._getVideoStream = function() {
+Camera.prototype._getVideoStream = function(callback) {
   if (!this.connection) {
-    this._connect(); 
+    this._connect(callback);
   }
   return this.connection.pipe(new MjpegConsumer());
 };
@@ -137,16 +141,17 @@ Camera.prototype.getScreenshot = function(callback) {
       callback(null, this.frame);
     }.bind(this));
   } else {
-    var videostream = this._getVideoStream();
-    
-    videostream.on('data', function(frame) {
-      this.stop();
-      callback(null, frame);
-    }.bind(this));
-
-    videostream.on('error', function(err) {
+    var handleError = function(err) {
       this.stop();
       callback(err);
+    }.bind(this);
+
+    var videostream = this._getVideoStream(handleError);
+    videostream.once('error', handleError);
+
+    videostream.once('data', function(frame) {
+      this.stop();
+      callback(null, frame);
     }.bind(this));
   }
 };
