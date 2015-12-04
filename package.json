@@ -1,6 +1,6 @@
 {
   "name": "mjpeg-camera",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "A full-featured mjpeg camera streaming library",
   "main": "mjpeg-camera.js",
   "bin": {
