@@ -1,6 +1,6 @@
 {
   "name": "mjpeg-camera",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "A full-featured mjpeg camera streaming library",
   "main": "mjpeg-camera.js",
   "bin": {
@@ -32,7 +32,7 @@
     "dev-null": "^0.1.1",
     "lodash": "^2.4.1",
     "mjpeg-consumer": "^1.0.3",
-    "motion": "^0.2.2",
+    "motion-detect": "^0.2.2",
     "request": "^2.37.0",
     "unpipe": "^1.0.0"
   }

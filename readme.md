@@ -98,7 +98,7 @@ Options
 
 * **url** `String` - The url of the mjpeg camera.
 * **name** `String` (optional) - The name of the camera. The `name` is used when passing along a frame as frames are objects of the format `{ name: <string>, time: <number>, data: <buffer> }`. Defaults to 'camera' and a random number between 0 and 1000.
-* **motion** `Boolean` (optional) - A flag that tells the camera to only emit frames when motion is detected. mjpeg-camera uses the [motion](https://github.com/mmaelzer/motion) library for motion detection. Defaults to `false`.
+* **motion** `Boolean` (optional) - A flag that tells the camera to only emit frames when motion is detected. mjpeg-camera uses the [motion-detect](https://github.com/mmaelzer/motion) library for motion detection. Defaults to `false`.
 * **password** `String` (optional) - The password required for authenticating with the camera.
 * **user** `String` (optional) - The username required for authenticating with the camera.
 * **timeout** `Number` (optional) - The time in milliseconds that must elapse since last receiving data from the camera before trying to reconnect to the camera.
