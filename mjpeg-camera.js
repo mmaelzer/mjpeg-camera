@@ -101,6 +101,9 @@ Camera.prototype.stop = function() {
   clearTimeout(this._timeout);
   this.connection.abort();
   this.connection = null;
+  // https://github.com/nodejs/node/blob/master/lib/events.js
+  // clear out internal event listeners
+  this._events = {};
 };
 
 /**
