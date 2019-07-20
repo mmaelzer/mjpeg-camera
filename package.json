@@ -1,6 +1,6 @@
 {
   "name": "mjpeg-camera",
-  "version": "1.7.2",
+  "version": "2.0.0",
   "description": "A full-featured mjpeg camera streaming library",
   "main": "mjpeg-camera.js",
   "bin": {
@@ -11,7 +11,7 @@
     "url": "https://github.com/mmaelzer/mjpeg-camera"
   },
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=8.0.0"
   },
   "keywords": [
     "mjpeg",
@@ -30,8 +30,7 @@
   "dependencies": {
     "commander": "^2.3.0",
     "dev-null": "^0.1.1",
-    "lodash": "^2.4.1",
-    "mjpeg-consumer": "1.1.0",
+    "mjpeg-consumer": "2.0.0",
     "motion-detect": "^0.2.2",
     "request": "^2.37.0",
     "unpipe": "^1.0.0"

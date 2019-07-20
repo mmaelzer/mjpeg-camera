@@ -1,4 +1,3 @@
-var _ = require('lodash');
 var devnull = require('dev-null');
 var MjpegConsumer = require('mjpeg-consumer');
 var MotionStream = require('motion-detect').Stream;
@@ -26,13 +25,13 @@ function Camera(options) {
   this.readable = true;
   this.writable = true;
 
-  this.name = options.name || ('camera' + _.random(1000));
+  this.name = options.name || ('camera' + (Math.floor(Math.random() * 1000)));
   this.motion = options.motion || false;
   this.url = options.url;
   this.user = options.user;
   this.password = options.password;
 
-  this.sendImmediately = _.has(options, 'sendImmediately') ? options.sendImmediately : true;
+  this.sendImmediately = 'sendImmediately' in options ? options.sendImmediately : true;
 
   this.timeout = options.timeout || 10000;
   // this.frame will hold onto the last frame
