@@ -43,9 +43,10 @@ util.inherits(Camera, Stream);
 /**
  *  Open the connection to the camera and begin streaming
  *  and optionally performing motion analysis
+ *  @param {Function(Error, Buffer)} Error callback
  */
-Camera.prototype.start = function() {
-  var videostream = this._getVideoStream();
+Camera.prototype.start = function(errorCallback) {
+  var videostream = this._getVideoStream(errorCallback);
   videostream.on('data', this.onFrame.bind(this));
   if (this.motion) {
     videostream.pipe(new MotionStream()).pipe(this);
