@@ -28,11 +28,11 @@
   },
   "homepage": "https://github.com/mmaelzer/mjpeg-camera",
   "dependencies": {
-    "commander": "^2.3.0",
+    "commander": "^2.20.3",
     "dev-null": "^0.1.1",
     "mjpeg-consumer": "2.0.0",
-    "motion-detect": "^0.2.2",
-    "request": "^2.37.0",
+    "motion-detect": "^0.2.5",
+    "request": "^2.88.2",
     "unpipe": "^1.0.0"
   }
 }
