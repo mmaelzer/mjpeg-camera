@@ -99,7 +99,7 @@ Camera.prototype._getVideoStream = function(callback) {
  */
 Camera.prototype.stop = function() {
   clearTimeout(this._timeout);
-  this.connection.abort();
+  this.connection.end();
   this.connection = null;
   // https://github.com/nodejs/node/blob/master/lib/events.js
   // clear out internal event listeners
