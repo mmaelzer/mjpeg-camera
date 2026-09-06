@@ -38,6 +38,15 @@ function Camera(options) {
   this.timeout = options.timeout || 10000;
   // this.frame will hold onto the last frame
   this.frame = null;
+
+  // Connection-scoped, all set in _connect and cleared in stop.
+  this.connection = null;
+  this.consumer = null;
+  this._target = null;
+  this._transport = null;
+  this._credentials = null;
+  this._onError = null;
+
   this.pipe(devnull(options));
 }
 util.inherits(Camera, Stream);
@@ -58,7 +67,9 @@ Camera.prototype.start = function(errorCallback) {
 };
 
 /**
- *  Creates an http stream to the camera
+ *  Derives everything the connection needs and opens it. The derived values
+ *  live on the instance rather than in a closure: they have exactly the
+ *  lifetime of `connection` and are cleared with it in `stop`.
  *  @private
  */
 Camera.prototype._connect = function(errorCallback) {
@@ -66,62 +77,73 @@ Camera.prototype._connect = function(errorCallback) {
     this.stop();
   }
 
-  var self = this;
-  var onError = errorCallback || this.keepalive.bind(this);
+  var target = new URL(this.url);
+
+  this._target = target;
+  this._transport = target.protocol === 'https:' ? https : http;
+  this._onError = errorCallback || this.keepalive.bind(this);
+  this._credentials = {
+    username: this.user || '',
+    password: this.password || '',
+    method: 'GET',
+    // Digest hashes the request target exactly as it goes out on the wire.
+    uri: target.pathname + target.search
+  };
 
   // The consumer is handed back to the caller before the response exists, and
   // is fed once it arrives. `request` was a duplex stream available the moment
   // it was constructed; nothing in the standard library behaves that way.
-  var consumer = new MjpegConsumer();
-  this.consumer = consumer;
+  this.consumer = new MjpegConsumer();
 
-  var target = new URL(this.url);
-  var transport = target.protocol === 'https:' ? https : http;
-  // Digest hashes the request target exactly as it goes out on the wire.
-  var uri = target.pathname + target.search;
-
-  var credentials = {
-    username: this.user || '',
-    password: this.password || '',
-    method: 'GET',
-    uri: uri
-  };
-
-  function send(headers, isRetry) {
-    var request = transport.request(target, { method: 'GET', headers: headers });
-
-    request.on('response', function(response) {
-      if (response.statusCode === 401 && !isRetry && (self.user || self.password)) {
-        var header = auth.answer(response.headers['www-authenticate'], credentials);
-        // Drain the challenge body so the socket can be reused or closed.
-        response.resume();
-        if (header) return send({ authorization: header }, true);
-      }
-
-      if (response.statusCode !== 200) {
-        response.resume();
-        return onError(new Error(
-          'camera at ' + self.url + ' responded ' + response.statusCode
-        ));
-      }
-
-      response.pipe(consumer);
-    });
-
-    request.on('error', onError);
-    request.end();
-    self.connection = request;
-  }
-
-  var initial = {};
+  var headers = {};
   // Preemptive Basic, as before. A camera that wants Digest answers with a 401
-  // and the retry above handles it, whether or not we led with credentials.
+  // and _send handles it, whether or not we led with credentials.
   if (this.sendImmediately && (this.user || this.password)) {
-    initial.authorization = auth.basic(credentials.username, credentials.password);
+    headers.authorization = auth.basic(
+      this._credentials.username, this._credentials.password
+    );
   }
 
-  send(initial, false);
+  this._send(headers, false);
   this.keepalive();
+};
+
+/**
+ *  Issues the request and pipes the response into the consumer.
+ *
+ *  @param {Object} headers - request headers
+ *  @param {Boolean} isRetry - set when answering a 401, so a camera that keeps
+ *    challenging cannot drive this round forever
+ *  @private
+ */
+Camera.prototype._send = function(headers, isRetry) {
+  var self = this;
+  var request = this._transport.request(this._target, {
+    method: 'GET',
+    headers: headers
+  });
+
+  request.on('response', function(response) {
+    if (response.statusCode === 401 && !isRetry && (self.user || self.password)) {
+      var header = auth.answer(response.headers['www-authenticate'], self._credentials);
+      // Drain the challenge body so the socket can be reused or closed.
+      response.resume();
+      if (header) return self._send({ authorization: header }, true);
+    }
+
+    if (response.statusCode !== 200) {
+      response.resume();
+      return self._onError(new Error(
+        'camera at ' + self.url + ' responded ' + response.statusCode
+      ));
+    }
+
+    response.pipe(self.consumer);
+  });
+
+  request.on('error', this._onError);
+  request.end();
+  this.connection = request;
 };
 
 /**
@@ -150,6 +172,10 @@ Camera.prototype.stop = function() {
     this.consumer.destroy();
     this.consumer = null;
   }
+  this._target = null;
+  this._transport = null;
+  this._credentials = null;
+  this._onError = null;
   // https://github.com/nodejs/node/blob/master/lib/events.js
   // clear out internal event listeners
   this._events = {};
