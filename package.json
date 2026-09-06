@@ -11,7 +11,7 @@
     "url": "https://github.com/mmaelzer/mjpeg-camera"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=18"
   },
   "keywords": [
     "mjpeg",
@@ -30,9 +30,17 @@
   "dependencies": {
     "commander": "^2.20.3",
     "dev-null": "^0.1.1",
-    "mjpeg-consumer": "2.0.0",
+    "mjpeg-consumer": "^2.0.0",
     "motion-detect": "^0.2.5",
-    "request": "^2.88.2",
     "unpipe": "^1.0.0"
-  }
+  },
+  "scripts": {
+    "test": "node --test test/test.js"
+  },
+  "files": [
+    "auth.js",
+    "mjpeg-camera.js",
+    "cs",
+    "readme.md"
+  ]
 }

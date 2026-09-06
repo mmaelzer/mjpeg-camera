@@ -101,7 +101,18 @@ Options
 * **motion** `Boolean` (optional) - A flag that tells the camera to only emit frames when motion is detected. mjpeg-camera uses the [motion-detect](https://github.com/mmaelzer/motion) library for motion detection. Defaults to `false`.
 * **password** `String` (optional) - The password required for authenticating with the camera.
 * **user** `String` (optional) - The username required for authenticating with the camera.
+* **sendImmediately** `Boolean` (optional) - Send credentials preemptively rather than waiting to be challenged. Defaults to `true`. See Authentication below.
 * **timeout** `Number` (optional) - The time in milliseconds that must elapse since last receiving data from the camera before trying to reconnect to the camera.
+
+
+Authentication
+--------------
+
+Set `user` and `password` and the camera handles the rest. Both **Basic** and **Digest** are supported; many IP cameras only accept Digest.
+
+By default credentials are sent preemptively as Basic, which saves a round trip. If the camera answers `401` anyway, the challenge is read and answered — Digest is preferred when both are offered. Set `sendImmediately: false` to skip the preemptive header and always wait to be challenged.
+
+Digest supports the `MD5`, `MD5-sess`, `SHA-256` and `SHA-256-sess` algorithms, with or without `qop=auth`. `auth-int` is not supported: it requires hashing a request body, and these requests have none.
 
 
 Methods
